@@ -150,5 +150,4 @@ composants dans `components/` sans modifier le code existant.
 
 ## Informations du Projet
 **Auteur:** Alexei de Moraes Zubakin  
-**Lieu:** Montreal-QC  
-**Date:** 30 janvier 2025
+**Lieu:** Montreal-QC
