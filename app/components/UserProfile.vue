@@ -1,92 +1,139 @@
+/**
+ * Composant de profil utilisateur pour l'application
+ * 
+ * Fonctionnalités principales :
+ * - Affichage des informations personnelles de l'utilisateur
+ * - Modification du nom d'utilisateur
+ * - Déconnexion sécurisée avec nettoyage de session
+ * - Communication avec le service d'authentification pour la mise à jour du profil
+ */
 <template>
   <Page>
-    <ActionBar title="User Profile">
-      <NavigationButton text="Back" android:systemIcon="ic_menu_back" @tap="goBack" />
+    <ActionBar title="Profil utilisateur">
+      <NavigationButton text="Retour" android:systemIcon="ic_menu_back" @tap="goBack" />
     </ActionBar>
-    <StackLayout>
-      <TextField v-model="userName" hint="User Name" />
-      <TextField v-model="userEmail" hint="Email" keyboardType="email" isEnabled="false" class="email-field" />
-      <Button text="Save Changes" @tap="saveChanges" />
-      <Button text="Logout" @tap="logout" class="logout-btn" />
+    <StackLayout padding="20">
+      <!-- Champ de saisie pour le nom d'utilisateur (modifiable) -->
+      <TextField v-model="userName" hint="Nom d'utilisateur" />
+
+      <!-- Champ de courriel (lecture seule) -->
+      <TextField v-model="userEmail" hint="Courriel" keyboardType="email" isEnabled="false" class="email-field" />
+
+      <!-- Bouton de sauvegarde des modifications -->
+      <Button text="Sauvegarder" @tap="saveChanges" backgroundColor="#2196F3" color="white" />
+
+      <!-- Bouton de déconnexion -->
+      <Button text="Déconnexion" @tap="logout" class="logout-btn" />
     </StackLayout>
   </Page>
 </template>
 
 <script>
-import { ApplicationSettings } from "@nativescript/core";
-import axios from "axios/dist/axios";
+import authService from "../services/authService";
 import Login from "./Login.vue";
 
 export default {
+  /**
+   * État initial du composant
+   * @returns {Object} État réactif pour le profil utilisateur
+   */
   data() {
     return {
-      userName: "",
-      userEmail: "",
+      userName: "",    // Nom d'utilisateur affiché et modifiable
+      userEmail: "",   // Courriel de l'utilisateur (lecture seule)
     };
   },
   methods: {
+    /**
+     * Navigation vers la page précédente
+     * Utilise la navigation intégrée de NativeScript-Vue
+     */
     goBack() {
       this.$navigateBack();
     },
+
+    /**
+     * Sauvegarde des modifications du profil utilisateur
+     * 
+     * Étapes principales :
+     * 1. Envoi de la requête via le service d'authentification
+     * 2. Mise à jour automatique du stockage local (géré par le service)
+     * 3. Affichage d'un message de confirmation
+     */
     async saveChanges() {
       try {
-        const userToken = ApplicationSettings.getString("userToken");
-        
-        // Use the correct backend endpoint for authentication routes
-        const response = await axios({
-          method: 'put',
-          url: "http://10.0.2.2:3000/auth/users", // Add /auth prefix
-          headers: {
-            'Authorization': `Bearer ${userToken}`,
-            'Content-Type': 'application/json'
-          },
-          data: {
-            username: this.userName,
-            email: this.userEmail // Keep the original email
-          }
-        });
+        // Mise à jour du profil via le service d'authentification
+        await authService.updateProfile(this.userName, this.userEmail);
 
-        // Update local storage with new username
-        const userData = JSON.parse(ApplicationSettings.getString("userData"));
-        userData.name = this.userName;
-        ApplicationSettings.setString("userData", JSON.stringify(userData));
-
-        // Show success message
-        alert("Username updated successfully!");
-      } catch (error) {
-        console.error("Full error details:", JSON.stringify(error, null, 2));
-        console.error("Error response:", error.response ? JSON.stringify(error.response.data, null, 2) : "No response");
-        console.error("Error updating profile:", error.message);
-        
-        // More detailed error alert
+        // Affichage d'un message de succès
         alert({
-          title: "Update Error",
-          message: `Failed to update username. 
-Error: ${error.message}
-Details: ${error.response ? JSON.stringify(error.response.data) : "No additional details"}`,
+          title: "Succès",
+          message: "Nom d'utilisateur mis à jour avec succès !",
+          okButtonText: "OK"
+        });
+      } catch (error) {
+        console.error("Détails de l'erreur :", error.message);
+        
+        // Alerte d'erreur détaillée
+        alert({
+          title: "Erreur de mise à jour",
+          message: `Échec de la mise à jour du nom d'utilisateur.\nErreur : ${error.message}`,
           okButtonText: "OK"
         });
       }
     },
+
+    /**
+     * Déconnexion de l'utilisateur
+     * 
+     * Utilise le service d'authentification pour nettoyer la session
+     * et redirige vers la page de connexion avec nettoyage de l'historique
+     */
     logout() {
-      // Clear stored user data
-      ApplicationSettings.remove("userToken");
-      ApplicationSettings.remove("userData");
+      // Déconnexion via le service d'authentification
+      authService.logout();
       
-      // Navigate back to login
+      // Navigation vers la page de connexion avec nettoyage de l'historique
       this.$navigateTo(Login, { clearHistory: true });
     }
   },
+
+  /**
+   * Hook de montage : chargement des données utilisateur
+   * 
+   * Vérifie l'authentification et récupère les informations utilisateur
+   * depuis le service d'authentification.
+   * Redirige vers la page de connexion si aucune session n'est active.
+   */
   mounted() {
-    // Load current user data when component mounts
-    const userData = JSON.parse(ApplicationSettings.getString("userData"));
-    this.userName = userData.name || "";
-    this.userEmail = userData.email || "";
+    // Vérification de l'authentification
+    if (!authService.isAuthenticated()) {
+      this.$navigateTo(Login, { clearHistory: true });
+      return;
+    }
+
+    // Récupération des données utilisateur via le service
+    const userData = authService.getUserData();
+    if (userData) {
+      this.userName = userData.name || "";
+      this.userEmail = userData.email || "";
+    }
   }
 };
 </script>
 
 <style scoped>
+/* Styles spécifiques au composant de profil utilisateur */
+TextField {
+  margin: 10;
+  padding: 10;
+}
+
+Button {
+  margin: 10;
+  padding: 10;
+}
+
 .logout-btn {
   background-color: rgba(50, 148, 5, 0.842);
   color: white;
@@ -98,4 +145,4 @@ Details: ${error.response ? JSON.stringify(error.response.data) : "No additional
   color: gray;
   background-color: transparent;
 }
-</style> 
+</style>

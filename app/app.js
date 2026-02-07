@@ -1,7 +1,13 @@
+/**
+ * Point d'entrée de l'application NativeScript-Vue
+ * 
+ * Initialise l'application avec le composant Login comme écran initial.
+ * La navigation vers les autres composants (Register, Home, UserProfile)
+ * est gérée par la navigation intégrée de NativeScript-Vue.
+ */
 import Vue from 'nativescript-vue';
 import Login from './components/Login.vue';
-import Register from './components/Register.vue';
-import TaskList from './components/TaskList.vue';
+
 new Vue({
-render: (h) => h('frame', [h(Login)]),
+  render: (h) => h('frame', [h(Login)]),
 }).$start();

@@ -1,7 +1,7 @@
 import { NativeScriptConfig } from '@nativescript/core';
 
 export default {
-  id: 'org.nativescript.TP3',
+  id: 'org.nativescript.AuthentificationUtilisateur',
   appPath: 'app',
   appResourcesPath: 'App_Resources',
   android: {

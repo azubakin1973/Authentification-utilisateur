@@ -1,27 +1,30 @@
 /**
- * Composant d'inscription pour l'application de gestion de tâches
+ * Composant d'inscription pour l'application
  * 
  * Fonctionnalités principales :
  * - Formulaire d'inscription avec validation côté client
  * - Vérification des données utilisateur
- * - Communication avec le backend pour créer un nouveau compte
+ * - Communication avec le service d'authentification pour créer un nouveau compte
  * - Gestion des erreurs d'inscription
  */
 <template>
   <Page>
-    <ActionBar title="Register" />
+    <ActionBar title="Inscription" />
     <StackLayout padding="20">
       <!-- Champs de saisie avec validation et liaison de données -->
-      <TextField v-model="username" hint="Username" autocorrect="false" />
-      <TextField v-model="email" hint="Email" keyboardType="email" autocorrect="false" />
-      <TextField v-model="password" hint="Password" secure="true" />
-      <TextField v-model="confirmPassword" hint="Confirm Password" secure="true" />
+      <TextField v-model="username" hint="Nom d'utilisateur" autocorrect="false" :isEnabled="!loading" />
+      <TextField v-model="email" hint="Courriel" keyboardType="email" autocorrect="false" :isEnabled="!loading" />
+      <TextField v-model="password" hint="Mot de passe" secure="true" :isEnabled="!loading" />
+      <TextField v-model="confirmPassword" hint="Confirmer le mot de passe" secure="true" :isEnabled="!loading" />
       
-      <!-- Bouton d'inscription avec style et gestionnaire d'événement -->
-      <Button text="Register" @tap="register" backgroundColor="#2196F3" color="white" />
+      <!-- Bouton d'inscription avec indicateur de chargement -->
+      <Button :text="loading ? 'Inscription en cours...' : 'S\'inscrire'" @tap="register" :isEnabled="!loading" backgroundColor="#2196F3" color="white" />
+      
+      <!-- Indicateur de chargement -->
+      <ActivityIndicator v-if="loading" :busy="loading" class="activity-indicator" />
       
       <!-- Bouton de retour à la page de connexion -->
-      <Button text="Go Back to Login" @tap="goToLogin" />
+      <Button text="Retour à la connexion" @tap="goToLogin" :isEnabled="!loading" />
       
       <!-- Affichage conditionnel des messages d'erreur -->
       <Label v-if="error" :text="error" class="error" color="red" textAlignment="center" textWrap="true" />
@@ -30,7 +33,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import authService from "../services/authService";
 import Login from "./Login.vue";
 
 export default {
@@ -45,6 +48,7 @@ export default {
       password: "",        // Mot de passe saisi
       confirmPassword: "", // Confirmation du mot de passe
       error: null,         // Message d'erreur de validation
+      loading: false,      // Indicateur de chargement pendant l'inscription
     };
   },
   methods: {
@@ -69,20 +73,20 @@ export default {
     validateForm() {
       // Validation du nom d'utilisateur
       if (!this.username.trim()) {
-        this.error = "Username is required";
+        this.error = "Le nom d'utilisateur est requis";
         return false;
       }
       
       // Validation du format du nom d'utilisateur
       const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
       if (!usernameRegex.test(this.username)) {
-        this.error = "Username must be 3-20 characters and contain only letters, numbers and underscores";
+        this.error = "Le nom d'utilisateur doit contenir entre 3 et 20 caractères (lettres, chiffres et underscores uniquement)";
         return false;
       }
 
       // Validation de l'email
       if (!this.email.trim()) {
-        this.error = "Email is required";
+        this.error = "Le courriel est requis";
         return false;
       }
       
@@ -92,13 +96,13 @@ export default {
       // Validation du format de l'email
       const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
       if (!emailRegex.test(this.email)) {
-        this.error = "Invalid email format";
+        this.error = "Format de courriel invalide";
         return false;
       }
       
-      // Validation de la longueur du mot de passe
-      if (this.password.length < 3) {
-        this.error = "Password must be at least 3 characters";
+      // Validation de la longueur du mot de passe (minimum 8 caractères pour la sécurité)
+      if (this.password.length < 8) {
+        this.error = "Le mot de passe doit contenir au moins 8 caractères";
         return false;
       }
       
@@ -108,7 +112,7 @@ export default {
       
       // Validation de la correspondance des mots de passe
       if (this.password !== this.confirmPassword) {
-        this.error = "Passwords do not match";
+        this.error = "Les mots de passe ne correspondent pas";
         return false;
       }
       return true;
@@ -120,7 +124,7 @@ export default {
      * Étapes principales :
      * 1. Validation du formulaire
      * 2. Préparation des données utilisateur
-     * 3. Envoi de la requête d'inscription à l'API
+     * 3. Envoi de la requête d'inscription via le service d'authentification
      * 4. Gestion des réponses et des erreurs
      */
     async register() {
@@ -133,40 +137,40 @@ export default {
           return;
         }
 
-        // Préparation des données utilisateur nettoyées
-        const userData = {
-          username: this.username.trim(),
-          email: this.email.trim().toLowerCase(),
-          password: this.password.trim()
-        };
+        // Activation de l'indicateur de chargement
+        this.loading = true;
 
-        // Requête d'inscription à l'API
-        const response = await axios.post("http://10.0.2.2:3000/auth/users", userData);
+        // Inscription via le service d'authentification
+        await authService.register(
+          this.username.trim(),
+          this.email.trim().toLowerCase(),
+          this.password.trim()
+        );
         
-        // Gestion de la réponse réussie
-        if (response.data) {
-          // Affichage d'une alerte de succès
-          alert({
-            title: "Success",
-            message: "Inscription réussie ! Veuillez vous connecter.",
-            okButtonText: "OK"
-          });
-          // Navigation vers la page de connexion
-          this.$navigateTo(Login);
-        }
+        // Affichage d'une alerte de succès
+        alert({
+          title: "Succès",
+          message: "Inscription réussie ! Veuillez vous connecter.",
+          okButtonText: "OK"
+        });
+        // Navigation vers la page de connexion
+        this.$navigateTo(Login);
       } catch (error) {
         // Gestion détaillée des erreurs d'inscription
         if (error.response?.status === 500) {
-          this.error = "Server error. Please check your input and try again.";
+          this.error = "Erreur serveur. Veuillez vérifier vos informations et réessayer.";
         } else if (error.response?.status === 409) {
-          this.error = "Username or email already registered";
+          this.error = "Nom d'utilisateur ou courriel déjà enregistré";
         } else if (error.response?.status === 400) {
-          this.error = "Invalid input format";
+          this.error = "Format de saisie invalide";
         } else if (error.response?.data?.message) {
           this.error = error.response.data.message;
         } else {
-          this.error = "Error registering account. Please try again.";
+          this.error = "Erreur lors de l'inscription. Veuillez réessayer.";
         }
+      } finally {
+        // Désactivation de l'indicateur de chargement
+        this.loading = false;
       }
     },
   },
@@ -184,6 +188,9 @@ Button {
   padding: 10;
 }
 .error {
+  margin: 10;
+}
+.activity-indicator {
   margin: 10;
 }
 </style>

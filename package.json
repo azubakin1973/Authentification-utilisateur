@@ -1,9 +1,13 @@
 {
-  "name": "TP3",
+  "name": "Authentification-utilisateur",
   "main": "app/app.js",
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js"
+    "android": "ns run android",
+    "ios": "ns run ios",
+    "preview": "ns preview",
+    "clean": "ns clean",
+    "build:android": "ns build android --release",
+    "build:ios": "ns build ios --release"
   },
   "version": "1.0.0",
   "private": true,
@@ -11,8 +15,7 @@
     "@nativescript/core": "~8.8.0",
     "@nativescript/theme": "^3.1.0",
     "axios": "^0.18.1",
-    "nativescript-vue": "~2.9.3",
-    "vue-router": "^4.5.0"
+    "nativescript-vue": "~2.9.3"
   },
   "devDependencies": {
     "@nativescript/android": "8.8.6",

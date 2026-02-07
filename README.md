@@ -1,7 +1,9 @@
-# Application Mobile de Gestion de Tâches
+# Authentification utilisateur
 
 ## Description Générale
-Cette application mobile multiplateforme développée avec NativeScript-Vue offre une solution complète de gestion de tâches personnelles avec authentification sécurisée.
+Application mobile multiplateforme développée avec NativeScript-Vue offrant
+un système complet d'authentification utilisateur : inscription, connexion
+et accès aux données personnelles.
 
 ## Prérequis
 
@@ -27,8 +29,8 @@ Cette application mobile multiplateforme développée avec NativeScript-Vue offr
 
 ### 1. Clonage du Dépôt
 ```bash
-git clone https://github.com/azubakin1973/TP3.git
-cd TP3
+git clone https://github.com/azubakin1973/Authentification-utilisateur.git
+cd Authentification-utilisateur
 ```
 
 ### 2. Installation des Dépendances
@@ -81,27 +83,65 @@ ns build ios --release
 
 ### 1. Inscription (Register)
 - Création de compte utilisateur
-- Validation des champs de formulaire
-- Stockage sécurisé des informations personnelles
-- Gestion des erreurs d'inscription
+- Validation des champs de formulaire (nom d'utilisateur, courriel, mot de passe)
+- Gestion des erreurs d'inscription (doublon, format invalide, etc.)
 
 ### 2. Connexion (Login)
-- Authentification sécurisée
+- Authentification sécurisée via JWT
 - Validation des identifiants
-- Gestion des sessions utilisateur
-- Protection contre les tentatives de connexion multiples
+- Gestion des sessions utilisateur (persistance du token)
+- Redirection automatique si une session est active
 
-### 3. Gestion des Tâches
-- Création de nouvelles tâches
-- Modification des tâches existantes
-- Suppression de tâches
-- Marquage des tâches comme complétées
-- Filtrage et tri des tâches
+### 3. Profil Utilisateur (UserProfile)
+- Affichage des données personnelles
+- Modification du nom d'utilisateur
+- Déconnexion sécurisée avec nettoyage de session
+
+## Navigation
+L'application utilise la navigation intégrée de NativeScript-Vue (`$navigateTo`, `$navigateBack`)
+pour gérer les transitions entre les écrans.
+
+**Flux de navigation :**
+```
+Login ──→ Home (page d'accueil)
+  │              │
+  ↓              ↓
+Register    UserProfile
+```
+
+## Structure du projet
+
+```
+app/
+├── components/         # Composants Vue (interface utilisateur)
+│   ├── Login.vue           # Écran de connexion
+│   ├── Register.vue        # Écran d'inscription
+│   ├── Home.vue            # Page d'accueil après connexion
+│   └── UserProfile.vue     # Écran de profil utilisateur
+├── services/           # Couche de services (logique métier / API)
+│   ├── api.js              # Instance Axios préconfigurée (intercepteurs)
+│   └── authService.js      # Service d'authentification
+├── config.js           # Configuration centralisée (URL API)
+└── app.js              # Point d'entrée de l'application
+```
+
+## Architecture
+
+L'application suit une architecture en couches :
+
+- **Composants (Vue)** : Interface utilisateur et logique d'affichage
+- **Services** : Couche intermédiaire qui centralise les appels API et la logique métier
+- **Config** : Configuration centralisée (URL de l'API backend)
+
+Pour intégrer de nouvelles fonctionnalités ou une base de données,
+il suffit de créer de nouveaux services dans `services/` et de nouveaux
+composants dans `components/` sans modifier le code existant.
 
 ## Dépendances Principales
 - NativeScript-Vue (~2.9.3)
-- Vue Router (^4.5.0)
+- @nativescript/core (~8.8.0)
 - Axios (^0.18.1)
+- @nativescript/theme (^3.1.0)
 
 ## Dépannage
 - Assurez-vous que toutes les variables d'environnement sont correctement configurées
@@ -112,28 +152,3 @@ ns build ios --release
 **Auteur:** Alexei de Moraes Zubakin  
 **Lieu:** Montreal-QC  
 **Date:** 30 janvier 2025
-
-
-
-
-## Structure du projet
-
-```
-TP3/
-├── app/
-│   ├── components/     # Composants Vue
-│   ├── assets/        # Ressources statiques
-│   └── app.js         # Point d'entrée de l'application
-├── package.json       # Dépendances et scripts
-└── README.md         # Documentation
-```
-
-## Technologies utilisées
-
-- NativeScript-Vue (~2.9.3)
-- @nativescript/core (~8.8.0)
-- Vue Router (^4.5.0)
-- Axios (^0.18.1)
-
-
-

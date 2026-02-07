@@ -1,37 +1,39 @@
 /**
- * Composant de connexion pour l'application de gestion de tâches
+ * Composant de connexion pour l'application
  * 
  * Ce composant gère l'authentification des utilisateurs avec les fonctionnalités suivantes :
  * - Saisie des identifiants (email et mot de passe)
- * - Validation des credentials via une requête API
+ * - Validation des credentials via le service d'authentification
  * - Gestion des sessions utilisateur
- * - Redirection vers la liste des tâches après connexion réussie
+ * - Redirection vers la page d'accueil après connexion réussie
  */
 <template>
   <Page>
-    <ActionBar title="Login" />
-    <StackLayout>
+    <ActionBar title="Connexion" />
+    <StackLayout padding="20">
       <!-- Champs de saisie avec liaison de données (v-model) pour email et mot de passe -->
-      <TextField v-model="email" hint="Email" keyboardType="email" />
-      <TextField v-model="password" hint="Password" secure="true" />
+      <TextField v-model="email" hint="Courriel" keyboardType="email" autocorrect="false" :isEnabled="!loading" />
+      <TextField v-model="password" hint="Mot de passe" secure="true" :isEnabled="!loading" />
       
-      <!-- Bouton de connexion avec gestionnaire d'événement asynchrone -->
-      <Button text="Login" @tap="login" />
+      <!-- Bouton de connexion avec indicateur de chargement -->
+      <Button :text="loading ? 'Connexion en cours...' : 'Connexion'" @tap="login" :isEnabled="!loading" backgroundColor="#2196F3" color="white" />
+      
+      <!-- Indicateur de chargement -->
+      <ActivityIndicator v-if="loading" :busy="loading" class="activity-indicator" />
       
       <!-- Affichage conditionnel des erreurs de connexion -->
-      <Label v-if="error" text="Invalid credentials" class="error" />
+      <Label v-if="error" :text="error" class="error" color="red" textAlignment="center" textWrap="true" />
       
       <!-- Bouton de navigation vers l'inscription -->
-      <Button text="Register" @tap="register" />
+      <Button text="S'inscrire" @tap="register" :isEnabled="!loading" />
     </StackLayout>
   </Page>
 </template>
 
 <script>
-import { ApplicationSettings } from "@nativescript/core";
-import axios from "axios/dist/axios";
+import authService from "../services/authService";
 import Register from "./Register.vue";
-import TaskList from "./TaskList.vue";
+import Home from "./Home.vue";
 
 export default {
   /**
@@ -43,7 +45,7 @@ export default {
       email: "",        // Stockage de l'email saisi
       password: "",     // Stockage du mot de passe saisi
       error: null,      // Gestion des messages d'erreur
-      userToken: null,  // Stockage du token d'authentification
+      loading: false,   // Indicateur de chargement pendant l'authentification
     };
   },
   methods: {
@@ -59,39 +61,27 @@ export default {
      * Méthode de connexion avec gestion complète de l'authentification
      * 
      * Étapes principales :
-     * 1. Envoi des credentials au backend
+     * 1. Envoi des credentials au service d'authentification
      * 2. Validation de la réponse
-     * 3. Stockage sécurisé du token et des données utilisateur
-     * 4. Redirection vers la liste des tâches
+     * 3. Redirection vers la page d'accueil
      */
     async login() {
       try {
-        // Requête d'authentification à l'API
-        const response = await axios.post("http://10.0.2.2:3000/auth/login", {
-          email: this.email,
-          password: this.password,
-        });
+        // Activation de l'indicateur de chargement
+        this.loading = true;
+        this.error = null;
 
-        if (response.data) {
-          // Sauvegarde du token d'authentification dans les paramètres de l'application
-          ApplicationSettings.setString("userToken", response.data.token);
+        // Connexion via le service d'authentification
+        await authService.login(this.email, this.password);
           
-          // Décodage du token JWT pour extraire les informations utilisateur
-          const tokenParts = response.data.token.split('.');
-          const tokenPayload = JSON.parse(atob(tokenParts[1]));
-          
-          // Stockage des données utilisateur pour une utilisation ultérieure
-          ApplicationSettings.setString("userData", JSON.stringify({
-            email: this.email,
-            name: tokenPayload.username || 'User'
-          }));
-          
-          // Navigation vers la liste des tâches après connexion réussie
-          this.$navigateTo(TaskList);
-        }
+        // Navigation vers la page d'accueil après connexion réussie
+        this.$navigateTo(Home);
       } catch (error) {
         // Gestion des erreurs de connexion
-        this.error = "Invalid login credentials";
+        this.error = "Identifiants de connexion invalides";
+      } finally {
+        // Désactivation de l'indicateur de chargement
+        this.loading = false;
       }
     },
   },
@@ -101,8 +91,27 @@ export default {
    * Redirection automatique si un token valide est présent
    */
   mounted() {
-    this.userToken = ApplicationSettings.getString("userToken");
-    if (this.userToken) this.$navigateTo(TaskList);
+    if (authService.isAuthenticated()) {
+      this.$navigateTo(Home);
+    }
   },
 };
 </script>
+
+<style scoped>
+/* Styles spécifiques au composant de connexion */
+TextField {
+  margin: 10;
+  padding: 10;
+}
+Button {
+  margin: 10;
+  padding: 10;
+}
+.error {
+  margin: 10;
+}
+.activity-indicator {
+  margin: 10;
+}
+</style>
